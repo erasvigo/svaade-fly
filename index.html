@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Svaade Fly | Operational Flight Plan</title>
+    <meta name="copyright" content="© 2026 Erasmo Alonso Iglesias. All rights reserved.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <meta name="google" content="notranslate">
+    <link href='libs/css/maplibre-gl@3.6.2.css ' rel='stylesheet' />
+    <link rel="stylesheet" href="libs/css/style.css">
+    <link rel="icon" type="image/x-icon" href="libs/navigation.png">
+    <script src="libs/js/newGeomag.js"></script>
+    <script src="libs/js/syncXHR.js"></script>
+    <script src="libs/js/maplibre-gl@3.6.2.js"></script>
+    <script src="libs/js/turf@6.5.0.min.js"></script>
+    <script src="libs/js/togeojson@0.16.0.js"></script>
+    <script src="libs/js/tokml.js"></script>
+    <script src="libs/js/jspdf@2.5.1.min.js"></script>
+    <script src="libs/js/jspdf-autotable@3.8.2.min.js"></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-brand">
+                <h2>Svaade Fly | Operational Flight Plan</h2>
+            </div>
+            
+            <div class="header-actions">
+                <button id="menu-toggle" class="action-btn menu-toggle-btn" title="Menú de Accións">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+
+                <div id="header-menu" class="header-menu-collapse">
+                    <input type="file" id="input-json" style="display:none" accept=".json">
+                    <input type="file" id="input-kml" style="display:none" accept=".kml">
+
+                    <button id="btn-new" class="action-btn btn-danger" title="Clear all waypoints">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        <span>Clear</span>
+                    </button>
+
+                    <div class="action-separator"></div>
+
+                    <button id="btn-load-json" class="action-btn btn-secondary" title="Load JSON">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Load</span>
+                    </button>
+
+                    <button id="btn-save" class="action-btn btn-secondary" title="Save to JSON">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Save</span>
+                    </button>
+
+                    <button id="btn-load-kml" class="action-btn btn-secondary" title="Import KML">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <span>Import KML</span>
+                    </button>
+
+                    <button type="button" id="btn-export-kml" class="action-btn btn-secondary" title="Exportar ruta a KML">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>Export KML</span>
+                    </button>
+
+                    <div class="action-separator"></div>
+
+                    <button id="btn-export-color" class="action-btn btn-secondary" title="Export PDF (Color)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span>Export PDF</span>
+                    </button>
+
+                    <button id="btn-export-mono" class="action-btn btn-secondary" title="Print PDF (Mono)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        <span>Print PDF</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="mobile-tabs" id="mobile-tabs">
+            <button class="tab-btn active" data-panel="left">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                <span>Inputs</span>
+            </button>
+            <button class="tab-btn" data-panel="map">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+                <span>Map</span>
+            </button>
+            <button class="tab-btn" data-panel="right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>NavLog</span>
+            </button>
+        </nav>
+
+        <main class="app-body">
+            
+            <aside class="panel panel-left">
+                <div class="panel-section">
+                    <h3>Flight Setup</h3>
+                    <form id="main-form" onsubmit="event.preventDefault();">
+                        
+                        <div class="card-box">
+                            <div class="card-header">Flight & Departure</div>
+                            <div class="card-table grid-3">
+                                <div class="cell"><label>Flight ID</label><input type="text" id="flight-id" placeholder="ex. EC-X"></div>
+                                <div class="cell"><label>Date</label><input type="date" id="flight-date"></div>
+                                <div class="cell"><label>EOBT (Z)</label><input type="time" id="flight-time"></div>
+                            </div>
+                        </div>
+
+                        <div class="card-box">
+                            <div class="card-header">Aerodromes</div>
+                            <div class="card-table grid-4">
+                                <div class="cell"><label>DEP</label><input type="text" id="airfield-dep" placeholder="LEVX"></div>
+                                <div class="cell"><label>ARR</label><input type="text" id="airfield-arr" placeholder="LPPR"></div>
+                                <div class="cell"><label>ALTN 1</label><input type="text" id="airfield-alt1" placeholder="LPVL"></div>
+                                <div class="cell"><label>ALTN 2</label><input type="text" id="airfield-alt2" placeholder="LPBR"></div>
+                            </div>
+                        </div>
+
+                        <div class="card-box">
+                            <div class="card-header">Cruise (Default Values)</div>
+                            <div class="card-table grid-5">
+                                <div class="cell"><label>ALT</label><input type="number" lang="en" id="global-alt" value="5500"></div>
+                                <div class="cell"><label>IAS</label><input type="number" lang="en" id="global-ias" value="105"></div>
+                                <div class="cell"><label>W/DIR</label><input type="number" lang="en" id="global-wdir" value="0"></div>
+                                <div class="cell"><label>W/SPD</label><input type="number" lang="en" id="global-wspd" value="0"></div>
+                                <div class="cell"><label>ISA</label><input type="number" lang="en" id="global-isa" value="0"></div>
+                            </div>
+                        </div>
+
+                        <div class="card-box">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+                                <span>Fuel Inputs</span>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="fuel-type-selector">
+                                        <option value="JET-A1">Jet A-1</option>
+                                        <option value="JET-A">Jet A</option>
+                                        <option value="JET-B">Jet B</option>
+                                        <option value="AVGAS100LL" selected>Avgas 100LL</option>
+                                        <option value="MOGAS">Mogas</option>
+                                    </select>
+                                    <select id="unit-selector">
+                                        <option value="USG">USG</option>
+                                        <option value="L">L</option>
+                                        <option value="KG">KG</option>
+                                        <option value="lb">lb</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-table grid-4">
+                                <div class="cell"><label>TAXI (USG/H)</label><input type="number" lang="en" id="global-taxi-ff" value="4.0"></div>
+                                <div class="cell"><label>CRZ (USG/H)</label><input type="number" lang="en" id="global-ff" value="8.5"></div>
+                                <div class="cell"><label>HOLD (USG/H)</label><input type="number" lang="en" id="global-ff-holding" value="7.0"></div>
+                                <div class="cell"><label>BLOCK</label><input type="number" lang="en" id="global-ramp" value="40.0"></div>
+                            </div>
+                            <div class="card-table grid-6">
+                                <div class="cell"><label>TAXI</label><input type="number" lang="en" id="global-taxi" value="1.0"></div>
+                                <div class="cell"><label>CLMB</label><input type="number" lang="en" id="global-climb" value="2.5"></div>
+                                <div class="cell"><label>DESC</label><input type="number" lang="en" id="global-desc" value="1.0"></div>
+                                <div class="cell"><label>CONT</label><input type="number" lang="en" id="global-cont" value="2.0"></div>
+                                <div class="cell"><label>ALTN</label><input type="number" lang="en" id="global-altern" value="4.0"></div>
+                                <div class="cell"><label>FRF</label><input type="number" lang="en" id="global-reser" value="6.5"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel-section">
+                    <h3>OpenAIP Layers</h3>
+                    <div class="card-box openaip-card-box">
+                        <div class="card-header">
+                            <span>MAP OVERLAYS</span>
+                        </div>
+                        <div class="card-table openaip-table">
+                            <div class="cell cell-center">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-airspaces" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="cell cell-left">
+                                <strong class="layer-label">AIRSPACES</strong>
+                            </div>
+
+                            <div class="cell cell-center">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-navaids" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="cell cell-left">
+                                <strong class="layer-label">NAVAIDS</strong>
+                            </div>
+
+                            <div class="cell cell-center cell-no-border">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-airports" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="cell cell-left cell-no-border">
+                                <strong class="layer-label">AIRPORTS</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section bottom-section">
+                    <div id="layers-container">
+                        <h3>Loaded Layers</h3>
+                        <div id="layers-list"></div>
+                    </div>
+                </div>
+
+                <div class="panel-legal-disclaimer">
+                    <p><strong>SUPPLEMENTARY TOOL ONLY.</strong> Provided "as-is" without liability for errors or omissions. The Pilot in Command (PIC) retains sole, final responsibility for flight safety, regulatory compliance, and independent data verification. Use constitutes acceptance of these terms.</p>
+                    <div class="copyright-notice">
+                        &copy; 2026 svaade.com. All rights reserved.
+                    </div>
+                </div>
+            </aside>
+
+            <section class="panel panel-map">
+                <div id="map"></div>
+
+                <div id="measure-tool-container" class="floating-measure-tool">
+                    <button id="btn-measure" class="measure-btn" title="Medir rumbo e distancia">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <line x1="12" y1="2" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                        </svg>
+                    </button>
+                    <div id="measure-output" class="measure-output hidden">
+                        <div class="measure-row">TRU: <span id="measure-brg-true">---</span>°</div>
+                        <div class="measure-row">MAG: <span id="measure-brg-mag">---</span>°</div>
+                        <div class="measure-row">DST: <span id="measure-dist">-.-</span> NM</div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="panel panel-right">
+                <div class="main-navlog">
+                    <div class="navlog-header">
+                        <h3>NavLog</h3>
+                        <button id="btn-reverse-route" class="btn-reverse" title="Reverse waypoint order">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 7h8" />
+                                <path d="M10 3l4 4-4 4" />
+                                <path d="M18 17h-8" />
+                                <path d="M14 13l-4 4 4 4" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="section-help">Trip Fuel includes climb, cruise legs, and descent fuel.</div>
+                    <div id="list-items"></div>
+                </div>
+                <div id="navlog-resizer" class="panel-resizer" title="Arrastra para axustar o tamaño"></div>
+
+                <div class="panel-section fuel-summary-fixed">
+                    <h3>Fuel Summary</h3>
+                    <details class="card-box fuel-summary-details" open>
+                        <summary class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>FUEL SUMMARY (<span id="header-unit-display">USG</span>)</span>
+                            <strong id="fuel-status-header" class="status-text-gray">NO DATA</strong>
+                        </summary>
+                        
+                        <div class="card-table grid-3">
+                            <div class="f-cell label-cell"><label>BLOCK</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-ramp">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-ramp-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>TAXI</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-taxi">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-taxi-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>TOF</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-takeoff">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-takeoff-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>TRIP</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-trip">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-trip-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>CONT</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-cont">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-cont-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>ALTN</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-altern">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-altern-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>FRF</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-reser">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-reser-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>MIN REQ</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-min-req">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-min-req-time">........</span></div>
+
+                            <div class="f-cell label-cell"><label>EXTRA</label></div>
+                            <div class="f-cell val-cell"><strong id="sum-extra">0.0</strong></div>
+                            <div class="f-cell time-cell"><span id="sum-extra-time">........</span></div>
+
+                            <div class="f-cell label-cell cell-rem-bg"><label>REM</label></div>
+                            <div class="f-cell val-cell cell-rem-bg"><strong id="sum-rem-final">0.0</strong></div>
+                            <div class="f-cell time-cell cell-rem-bg"><span id="sum-rem-final-time">........</span></div>
+                        </div>
+                    </details>
+                </div>
+            </aside>
+
+        </main>
+    </div>
+    <dialog id="save-file-modal" class="custom-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Save Flight Plan</h3>
+            <p id="modal-desc">Enter the name for your exported file:</p>
+            
+            <div class="modal-field">
+                <input type="text" id="modal-filename-input" placeholder="plan_de_voo" autocomplete="off">
+                <span id="modal-extension" class="file-extension">.json</span>
+            </div>
+            
+            <div class="modal-actions">
+                <button id="btn-modal-cancel" class="modal-btn btn-cancel">Cancel</button>
+                <button id="btn-modal-confirm" class="modal-btn btn-confirm">Save File</button>
+            </div>
+        </div>
+    </dialog>
+</body>
+</html>
