@@ -991,6 +991,107 @@ input[type=number] {
     opacity: 1;
 }
 
+/* ==========================================================================
+   10. MEASUREMENT TOOL
+   ========================================================================== */
+
+.panel-map {
+    position: relative;
+}
+
+.floating-measure-tool {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 100;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.measure-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    color: var(--color-text-secondary);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.measure-btn:hover {
+    background-color: var(--color-bg-light);
+    color: var(--color-text-primary);
+    border-color: var(--color-text-tertiary);
+}
+
+.measure-btn.active {
+    background-color: var(--color-header);
+    color: var(--color-white);
+    border-color: var(--color-header);
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.25);
+}
+
+.measure-output {
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 4px 12px;
+    border-radius: 6px;
+    pointer-events: auto;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--color-border-light);
+    min-width: 105px;
+    display: flex;
+    flex-direction: column;
+}
+
+.measure-output.hidden {
+    display: none;
+}
+
+.measure-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    white-space: nowrap;
+    font-size: 0.62em;
+    font-weight: 700;
+    color: var(--color-text-tertiary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 6px 0;
+}
+
+.measure-row:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
+}
+
+.measure-row:first-child {
+    padding-top: 2px;
+}
+
+.measure-row span {
+    font-size: 1.45em; 
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: normal;
+    text-transform: none;
+    margin-left: 16px;
+}
+
 @media (max-width: 1024px) {
     html {
         font-size: 16px;
@@ -1108,11 +1209,15 @@ input[type=number] {
         background: var(--color-header);
         flex-direction: column;
         padding: 12px;
+        padding-bottom: 48px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         gap: 10px;
         z-index: 20;
         border-top: 1px solid var(--color-header-light);
         box-sizing: border-box;
+        max-height: calc(100vh - 56px - env(safe-area-inset-bottom));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .header-menu-collapse.show {
@@ -1153,115 +1258,7 @@ input[type=number] {
         padding: 0;
         justify-content: center;
     }
-}
 
-/* ==========================================================================
-   10. MEASUREMENT TOOL (Sophisticated & Minimalist)
-   ========================================================================== */
-
-.panel-map {
-    position: relative;
-}
-
-.floating-measure-tool {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    z-index: 100;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 8px;
-    pointer-events: none;
-}
-
-.measure-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
-    background-color: var(--color-white);
-    border: 1px solid var(--color-border);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-    color: var(--color-text-secondary);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    flex-shrink: 0;
-}
-
-.measure-btn:hover {
-    background-color: var(--color-bg-light);
-    color: var(--color-text-primary);
-    border-color: var(--color-text-tertiary);
-}
-
-/* En lugar de usar un azul eléctrico, unificamos coa identidade de "var(--color-header)" */
-.measure-btn.active {
-    background-color: var(--color-header);
-    color: var(--color-white);
-    border-color: var(--color-header);
-    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.25);
-}
-
-/* Widget de telemetría limpo con vidro esmerilado sutil */
-.measure-output {
-    background-color: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 4px 12px;
-    border-radius: 6px;
-    pointer-events: auto;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-    border: 1px solid var(--color-border-light);
-    min-width: 105px;
-    display: flex;
-    flex-direction: column;
-}
-
-.measure-output.hidden {
-    display: none;
-}
-
-/* Liñas cun divisor ultra-fino estilo aviónica moderna */
-.measure-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    white-space: nowrap;
-    font-size: 0.62em;
-    font-weight: 700;
-    color: var(--color-text-tertiary);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-    padding: 6px 0;
-}
-
-.measure-row:last-child {
-    border-bottom: none;
-    padding-bottom: 2px;
-}
-
-.measure-row:first-child {
-    padding-top: 2px;
-}
-
-/* Tipografía de datos: nítida, xerárquica e sen movemento grazas a tabular-nums */
-.measure-row span {
-    font-size: 1.45em; 
-    font-weight: 600;
-    color: var(--color-text-primary);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: normal;
-    text-transform: none;
-    margin-left: 16px;
-}
-
-/* Optimización para tablets e móbiles (maior área de toque) */
-@media (max-width: 768px) {
     .floating-measure-tool {
         top: 12px;
         left: 12px;
@@ -1277,5 +1274,22 @@ input[type=number] {
     }
     .measure-row {
         padding: 5px 0;
+    }
+
+    .custom-modal {
+        top: 16vh !important;
+        margin: 0 auto !important;
+        max-height: 75vh !important;
+        overflow-y: auto !important;
+        width: 92% !important;
+        max-width: 400px !important;
+    }
+
+    .custom-modal .modal-content {
+        padding: 16px !important;
+    }
+
+    .custom-modal .modal-field input {
+        font-size: 16px !important;
     }
 }

@@ -1196,6 +1196,19 @@ class PDFExporter {
             zoom: this.map.getZoom()
         };
 
+        // 1.2. Hide OpenAIP filling in monochrome mode
+        let originalFillVis = 'visible';
+        if (mono && this.map.getLayer('openaip-airspaces-fill')) {
+            originalFillVis = this.map.getLayoutProperty('openaip-airspaces-fill', 'visibility') || 'visible';
+            this.map.setLayoutProperty('openaip-airspaces-fill', 'visibility', 'none');
+        }
+
+        // 1.3. Hide measurement tool
+        const originalLineVis = this.map.getLayoutProperty('measure-line-layer', 'visibility') || 'visible';
+        const originalPointVis = this.map.getLayoutProperty('measure-points-layer', 'visibility') || 'visible';
+        this.map.setLayoutProperty('measure-line-layer', 'visibility', 'none');
+        this.map.setLayoutProperty('measure-points-layer', 'visibility', 'none');
+
         try {
             // 2. Resize and wait for map render
             const dims = this._getTargetCanvasDimensions(isLandscape);
@@ -1236,6 +1249,16 @@ class PDFExporter {
         } finally {
             // 5. Restore map and remove loading overlay
             this._restoreMapState(mapContainer, originalState);
+
+            // 5.1. Restore measurement tool
+            this.map.setLayoutProperty('measure-line-layer', 'visibility', originalLineVis);
+            this.map.setLayoutProperty('measure-points-layer', 'visibility', originalPointVis);
+
+            // 5.2. Restore OpeanAIP filling
+            if (mono && this.map.getLayer('openaip-airspaces-fill')) {
+                this.map.setLayoutProperty('openaip-airspaces-fill', 'visibility', originalFillVis);
+            }
+
             const overlay = document.getElementById('pdf-loading-overlay');
             if (overlay) {
                 overlay.remove();
@@ -1391,7 +1414,7 @@ class PDFExporter {
         this._addDispatchBox(doc, x, y, w, h, isMono);
 
         // Attribution
-        const attrText = 'Map © OpenFreeMap | Geocoding © LocationIQ | Aeronautical data © OpenAIP';
+        const attrText = 'Map © OpenFreeMap | Elevation © AWS Terrain Tiles | Geocoding © LocationIQ | Aeronautical data © OpenAIP';
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
 
@@ -2027,6 +2050,14 @@ class MapManager {
     }
 
     initMap(onLoadCallback) {
+        this.contourDemSource = new mlcontour.DemSource({
+            url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+            encoding: 'terrarium',
+            maxzoom: 12
+        });
+
+        this.contourDemSource.setupMaplibre(maplibregl);
+
         this.map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/positron',
@@ -2070,15 +2101,6 @@ class MapManager {
 
             this.map.setTerrain({ source: 'terrain-source', exaggeration: 1.2 });
 
-            this.map.addLayer({
-                id: 'sky',
-                type: 'sky',
-                paint: {
-                    'sky-color': '#87CEEB',
-                    'sky-horizon-blend': 0.5
-                }
-            });
-            
             this._setupSources();
             this._loadIcons();
             
@@ -2087,7 +2109,8 @@ class MapManager {
             this._addNavaidLayers();
             this._addRouteLayer();
             this._addMeasureLayers();
-            
+            this._addContourLayers();
+
             if (onLoadCallback) {
                 onLoadCallback(this.map);
             }
@@ -2335,6 +2358,72 @@ class MapManager {
         });
     }
 
+    _addContourLayers() {
+        this.map.addSource('contour-source', {
+            type: 'vector',
+            tiles: [
+                this.contourDemSource.contourProtocolUrl({
+                    thresholds: {
+                        4: [305, 305],
+                        8: [61, 305]
+                    },
+                    elevationKey: 'ele',
+                    levelKey: 'level',
+                    contourLayer: 'contours'
+                })
+            ],
+            maxzoom: 15
+        });
+
+        // Lines layer
+        this.map.addLayer({
+            id: 'contours-lines',
+            type: 'line',
+            source: 'contour-source',
+            'source-layer': 'contours',
+            filter: ['>', ['get', 'ele'], 0],
+            paint: {
+                'line-color': '#404040',
+                'line-width': ['match', ['get', 'level'], 1, 1.0, 0.4],
+                'line-opacity': ['match', ['get', 'level'], 1, 0.5, 0.4]
+            }
+        }, 'openaip-airspaces-fill');
+
+        // Labels layer
+        this.map.addLayer({
+            id: 'contours-labels',
+            type: 'symbol',
+            source: 'contour-source',
+            'source-layer': 'contours',
+            filter: [
+                'all', 
+                ['==', ['get', 'level'], 1],
+                ['>', ['get', 'ele'], 0]
+            ],
+            layout: {
+                'symbol-placement': 'line',
+                'text-field': [
+                    'concat', 
+                    ['to-string', ['*', ['round', ['/', ['*', ['get', 'ele'], 3.28084], 1000]], 1000]], 
+                    'ft'
+                ],
+                'text-font': MAP_CONFIG.fonts,
+                'text-size': 11,
+                'text-pitch-alignment': 'viewport',
+                'text-rotation-alignment': 'viewport',
+                'text-keep-upright': true,
+                'text-allow-overlap': true,
+                'text-ignore-placement': true,
+                'text-max-angle': 180
+            },
+            paint: {
+                'text-color': '#404040',
+                'text-halo-color': '#ffffff',
+                'text-halo-width': 1.0
+            }
+        });
+    }
+    
     toggleOpenAIP(isVisible) {
         this.setLayersVisibility(this.openaipLayerIds, isVisible);
     }
@@ -2786,6 +2875,21 @@ class AppEventBinder {
                 flightPlanner.mapManager.setLayersVisibility(layerIds, checkbox.checked);
             });
         });
+
+        const contourCheckbox = document.getElementById('chk-contours');
+
+        if (contourCheckbox) {
+            contourCheckbox.addEventListener('change', (e) => {
+                const visibility = e.target.checked ? 'visible' : 'none';
+                
+                if (flightPlanner.map && flightPlanner.map.getLayer('contours-lines')) {
+                    flightPlanner.map.setLayoutProperty('contours-lines', 'visibility', visibility);
+                }
+                if (flightPlanner.map && flightPlanner.map.getLayer('contours-labels')) {
+                    flightPlanner.map.setLayoutProperty('contours-labels', 'visibility', visibility);
+                }
+            });
+        }
 
         const btnSave = document.getElementById('btn-save');
         if (btnSave) {
@@ -3261,6 +3365,20 @@ class FlightPlanner {
 
                 this.rebuildUI();
                 this.refreshApp();
+
+                if (this.stateManager.waypoints.length > 0 && this.map) {
+                    const bounds = new maplibregl.LngLatBounds();
+                    this.stateManager.waypoints.forEach((wp) => {
+                        bounds.extend(wp.marker.getLngLat());
+                    });
+                    
+                    this.map.fitBounds(bounds, { 
+                        padding: 80,
+                        maxZoom: 10,
+                        duration: 1000
+                    });
+                }
+
             } catch (error) {
                 console.error('Error loading JSON:', error);
                 alert('Invalid JSON');

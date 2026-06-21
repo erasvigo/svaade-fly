@@ -13,6 +13,7 @@
     <script src="libs/js/newGeomag.js"></script>
     <script src="libs/js/syncXHR.js"></script>
     <script src="libs/js/maplibre-gl@3.6.2.js"></script>
+    <script src="libs/js/maplibre-contour@0.1.0.min.js"></script>
     <script src="libs/js/turf@6.5.0.min.js"></script>
     <script src="libs/js/togeojson@0.16.0.js"></script>
     <script src="libs/js/tokml.js"></script>
@@ -201,7 +202,7 @@
                 </div>
 
                 <div class="panel-section">
-                    <h3>OpenAIP Layers</h3>
+                    <h3>Layers</h3>
                     <div class="card-box openaip-card-box">
                         <div class="card-header">
                             <span>MAP OVERLAYS</span>
@@ -227,14 +228,24 @@
                                 <strong class="layer-label">NAVAIDS</strong>
                             </div>
 
-                            <div class="cell cell-center cell-no-border">
+                            <div class="cell cell-center">
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="chk-airports" checked>
                                     <span class="slider"></span>
                                 </label>
                             </div>
-                            <div class="cell cell-left cell-no-border">
+                            <div class="cell cell-left">
                                 <strong class="layer-label">AIRPORTS</strong>
+                            </div>
+
+                            <div class="cell cell-center cell-no-border">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-contours" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="cell cell-left cell-no-border">
+                                <strong class="layer-label">CONTOURS</strong>
                             </div>
                         </div>
                     </div>
