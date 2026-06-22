@@ -1137,6 +1137,9 @@ class PDFExporter {
         mapContainer.style.setProperty('height', `${targetHeight}px`, 'important');
         this.map.resize();
 
+        this.map.setTerrain(null);
+        this.map.jumpTo({ pitch: 0, bearing: 0 });
+
         if (this.state.waypoints.length >= 2) {
             const bounds = new maplibregl.LngLatBounds();
             this.state.waypoints.forEach(function(wp) {
@@ -1145,7 +1148,9 @@ class PDFExporter {
             this.map.fitBounds(bounds, {
                 padding: { top: 200, right: 80, bottom: 80, left: 80 },
                 duration: 0,
-                maxZoom: 12
+                maxZoom: 12,
+                pitch: 0,
+                bearing: 0
             });
         }
     }
@@ -1181,8 +1186,16 @@ class PDFExporter {
         this.map.resize();
         this.map.jumpTo({
             center: originalState.center,
-            zoom: originalState.zoom
+            zoom: originalState.zoom,
+            pitch: originalState.pitch,
+            bearing: originalState.bearing
         });
+
+        if (originalState.terrain) {
+            this.map.setTerrain({ source: 'terrain-source', exaggeration: 1.2 });
+        } else {
+            this.map.setTerrain(null);
+        }
     }
 
     async _captureMapCanvas(mono = false, isLandscape = false) {
@@ -1193,7 +1206,10 @@ class PDFExporter {
         const originalState = {
             cssText: mapContainer.style.cssText,
             center: this.map.getCenter(),
-            zoom: this.map.getZoom()
+            zoom: this.map.getZoom(),
+            pitch: this.map.getPitch(),
+            bearing: this.map.getBearing(),
+            terrain: this.map.getTerrain()
         };
 
         // 1.2. Hide OpenAIP filling in monochrome mode
